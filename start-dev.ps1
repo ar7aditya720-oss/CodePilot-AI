@@ -12,7 +12,7 @@ if (!(Test-Path -LiteralPath $AppPath)) {
 $AppContent = Get-Content -LiteralPath $AppPath -Raw
 $CorruptPattern = ';\\n([ \t]*const )'
 if ([regex]::IsMatch($AppContent, $CorruptPattern)) {
-    $AppContent = [regex]::Replace($AppContent, $CorruptPattern, ";`r`n`$1")
+    $AppContent = [regex]::Replace($AppContent, $CorruptPattern, (';' + [Environment]::NewLine + '$1'))
     Set-Content -LiteralPath $AppPath -Value $AppContent -Encoding utf8
     Write-Host 'Repaired malformed newline characters in src\App.tsx.' -ForegroundColor Yellow
 }
@@ -29,12 +29,12 @@ if ($LASTEXITCODE -ne 0) {
     throw 'Frontend build failed. Do not start the app until the build error is fixed.'
 }
 
-Write-Host 'Starting CodePilot AI backend in a new PowerShell window...'
 $BackendPath = Join-Path $ProjectRoot 'backend'
 if (!(Test-Path -LiteralPath $BackendPath)) {
     throw 'Cannot find the backend folder.'
 }
-# Load private API settings from backend/.env.local into this process so the backend inherits them.
+
+# Load private API settings from backend/.env.local into this process.
 $LocalEnvPath = Join-Path $BackendPath '.env.local'
 if (Test-Path -LiteralPath $LocalEnvPath) {
     Get-Content -LiteralPath $LocalEnvPath | ForEach-Object {
@@ -46,19 +46,17 @@ if (Test-Path -LiteralPath $LocalEnvPath) {
             if (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'"))) {
                 $value = $value.Substring(1, $value.Length - 2)
             }
-            if ($name -match '^[A-Za-z_][A-Za-z0-9_]*
-
-Write-Host 'Starting Vite frontend...'
-npm run dev
-) {
+            if ($name -match '^[A-Za-z_][A-Za-z0-9_]*$') {
                 [Environment]::SetEnvironmentVariable($name, $value, 'Process')
             }
         }
     }
     Write-Host 'Loaded private backend/.env.local settings.' -ForegroundColor Green
 } else {
-    Write-Host 'Remote AI is not configured yet. Copy backend/.env.example to backend/.env.local and add your NVIDIA API key.' -ForegroundColor Yellow
+    Write-Host 'Remote AI is not configured. Create backend/.env.local and add your NVIDIA API key.' -ForegroundColor Yellow
 }
+
+Write-Host 'Starting CodePilot AI backend in a new PowerShell window...'
 Start-Process -FilePath 'powershell.exe' -WorkingDirectory $BackendPath -ArgumentList @('-NoExit', '-Command', 'mvn spring-boot:run')
 
 Write-Host 'Starting Vite frontend...'
