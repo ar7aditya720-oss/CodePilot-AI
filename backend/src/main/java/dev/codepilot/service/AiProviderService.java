@@ -117,7 +117,7 @@ public class AiProviderService {
   }
 
   private static String remoteModel() {
-    return firstConfigured("NVIDIA_MODEL", "OPENAI_MODEL", "qwen/qwen2.5-coder-32b-instruct");
+    return firstConfigured("NVIDIA_MODEL", "OPENAI_MODEL", "google/gemma-4-31b-it");
   }
 
   private static String remoteBaseUrl() {
