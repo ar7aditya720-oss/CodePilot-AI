@@ -34,6 +34,31 @@ $BackendPath = Join-Path $ProjectRoot 'backend'
 if (!(Test-Path -LiteralPath $BackendPath)) {
     throw 'Cannot find the backend folder.'
 }
+# Load private API settings from backend/.env.local into this process so the backend inherits them.
+$LocalEnvPath = Join-Path $BackendPath '.env.local'
+if (Test-Path -LiteralPath $LocalEnvPath) {
+    Get-Content -LiteralPath $LocalEnvPath | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and !$line.StartsWith('#') -and $line.Contains('=')) {
+            $parts = $line -split '=', 2
+            $name = $parts[0].Trim()
+            $value = $parts[1].Trim()
+            if (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'"))) {
+                $value = $value.Substring(1, $value.Length - 2)
+            }
+            if ($name -match '^[A-Za-z_][A-Za-z0-9_]*
+
+Write-Host 'Starting Vite frontend...'
+npm run dev
+) {
+                [Environment]::SetEnvironmentVariable($name, $value, 'Process')
+            }
+        }
+    }
+    Write-Host 'Loaded private backend/.env.local settings.' -ForegroundColor Green
+} else {
+    Write-Host 'Remote AI is not configured yet. Copy backend/.env.example to backend/.env.local and add your NVIDIA API key.' -ForegroundColor Yellow
+}
 Start-Process -FilePath 'powershell.exe' -WorkingDirectory $BackendPath -ArgumentList @('-NoExit', '-Command', 'mvn spring-boot:run')
 
 Write-Host 'Starting Vite frontend...'
