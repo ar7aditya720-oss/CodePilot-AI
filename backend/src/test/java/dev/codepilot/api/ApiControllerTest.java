@@ -27,6 +27,18 @@ class ApiControllerTest {
     }
 
     @Test
+    void oversizedRunRequestReturnsBadRequest() throws Exception {
+        String code = "x".repeat(50_001);
+        String body = new com.fasterxml.jackson.databind.ObjectMapper()
+            .writeValueAsString(java.util.Map.of("code", code, "fileName", "Main.java"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/run")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void providerStatusEndpointListsLocalAndRemoteProviders() throws Exception {
         mockMvc.perform(get("/api/ai/providers"))
             .andExpect(status().isOk())
