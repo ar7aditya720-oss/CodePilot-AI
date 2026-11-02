@@ -1,0 +1,20 @@
+import { useState } from 'react';
+import Editor from '@monaco-editor/react';
+import { Play, SearchCode, Bot, Code2, Terminal, CheckCircle2 } from 'lucide-react';
+
+type Result = { output?: string; exitCode?: number; timedOut?: boolean; error?: string };
+export default function App() {
+  const [code, setCode] = useState('public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, CodePilot AI!");\n    }\n}');
+  const [fileName] = useState('Main.java');
+  const [provider, setProvider] = useState('local');
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState('Ready. Run your Java code or request an AI review.');
+  const [review, setReview] = useState('Your review will appear here.');
+  async function callApi(path: string, body: object) {
+    const response = await fetch('/api/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await response.json(); if (!response.ok) throw new Error(data.message || 'Request failed'); return data;
+  }
+  async function runCode() { setBusy(true); try { const data: Result = await callApi('run', { code, fileName }); setResult(data.output || data.error || `Process finished with exit code ${data.exitCode ?? 0}`); } catch (e) { setResult('Run failed: ' + (e as Error).message); } finally { setBusy(false); } }
+  async function reviewCode() { setBusy(true); try { const data = await callApi('review', { code, fileName, provider }); setReview(data.review || data.summary || JSON.stringify(data, null, 2)); } catch (e) { setReview('Review failed: ' + (e as Error).message); } finally { setBusy(false); } }
+  return <main className="app"><header className="topbar"><div className="brand"><div className="logo"><Code2 size={21}/></div><div><strong>CodePilot <span>AI</span></strong><small>YOUR AI-POWERED CODING WORKSPACE</small></div></div><div className="top-actions"><label>AI provider <select value={provider} onChange={e=>setProvider(e.target.value)}><option value="local">Local · Ollama</option><option value="remote">Remote API</option></select></label><button className="primary" disabled={busy} onClick={runCode}><Play size={15}/>{busy?'Working…':'Run code'}</button><button onClick={reviewCode} disabled={busy}><SearchCode size={16}/> Review</button></div></header><section className="workspace"><aside className="sidebar"><div className="section-label">EXPLORER</div><div className="folder">⌄ &nbsp; CODEPILOT-WORKSPACE</div><div className="file active">▣ &nbsp; Main.java</div><div className="side-note"><Bot size={17}/><p>Write code. Find improvements. Understand complexity.</p></div></aside><section className="editor-area"><div className="tab">☕ &nbsp; {fileName} <span>×</span></div><div className="editor"><Editor height="100%" language="java" theme="vs-dark" value={code} onChange={v=>setCode(v ?? '')} options={{fontSize:14,minimap:{enabled:false},padding:{top:18},automaticLayout:true,scrollBeyondLastLine:false,wordWrap:'on',fontFamily:'JetBrains Mono, Consolas, monospace'}}/></div><div className="bottom"><div className="panel-title"><Terminal size={15}/> TERMINAL / OUTPUT</div><pre>{result}</pre></div></section><aside className="ai-panel"><div className="ai-heading"><Bot size={18}/> <strong>AI Code Review</strong><span className="dot"/></div><p className="muted">Review code for correctness, complexity, and useful optimizations.</p><button className="review-btn" disabled={busy} onClick={reviewCode}><SearchCode size={16}/>{busy?'Analyzing…':'Analyze current file'}</button><div className="review-result"><div className="result-label"><CheckCircle2 size={15}/> REVIEW RESULT</div><pre>{review}</pre></div><div className="hint"><strong>Quick tip</strong><p>Ask for optimizations only when they provide a meaningful improvement in performance, memory usage, or clarity.</p></div></aside></section><footer><span><i/> Ready</span><span>Java · React · Spring Boot</span><span>CodePilot AI MVP</span></footer></main>;
+}
