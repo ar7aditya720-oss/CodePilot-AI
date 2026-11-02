@@ -16,7 +16,7 @@ public class JavaRunnerService {
     try {
       dir = Files.createTempDirectory("codepilot-");
       String safeName = fileName != null && fileName.matches("[A-Za-z0-9_-]+\\.java") ? fileName : "Main.java";
-      Path compileLog = dir.resolve("compile-output.txt");
+      Files.writeString(dir.resolve(safeName), code, StandardCharsets.UTF_8);\n      Path compileLog = dir.resolve("compile-output.txt");
       Process compile = new ProcessBuilder("javac", safeName)
           .directory(dir.toFile())
           .redirectErrorStream(true)
