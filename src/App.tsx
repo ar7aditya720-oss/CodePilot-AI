@@ -38,7 +38,7 @@ export default function App() {
       setProviders(status);
     } catch { setBackendOnline(false); }
   }
-  useEffect(() => { void refreshStatus(); }, []);
+  useEffect(() => {\n    void refreshStatus();\n    // Keep retrying so the UI recovers if the backend starts after the page loads.\n    const timer = window.setInterval(() => { void refreshStatus(); }, 5000);\n    return () => window.clearInterval(timer);\n  }, []);
 
   async function testProvider() {
     setTestingProvider(true);
