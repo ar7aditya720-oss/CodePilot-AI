@@ -1,6 +1,6 @@
 # CodePilot AI 🚀
 
-A Java-focused coding workspace with a React + Monaco editor, Spring Boot API, local Ollama support, and an optional OpenAI-compatible remote provider.
+A Java-focused coding workspace with a React + Monaco editor, Spring Boot API, local Ollama support, and NVIDIA Build remote AI (OpenAI-compatible API).
 
 ## Features
 - Monaco Java editor with editable starter code
@@ -27,7 +27,7 @@ For local AI, install Ollama and run:
 ollama pull qwen2.5-coder:7b
 ```
 
-For remote AI, set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` / `OPENAI_BASE_URL` in the environment before starting Spring Boot.
+For remote AI, use an NVIDIA Build API key. Recommended coding model: `qwen/qwen2.5-coder-32b-instruct`.
 
 ### 2. Start backend
 
@@ -84,18 +84,19 @@ If this fails, check that Ollama is running, the model appears in `ollama list`,
 
 ### Option B — Remote OpenAI-compatible API
 
-Use an API key from your chosen provider. Do not paste it into the frontend or commit it to GitHub. Start the backend from a PowerShell terminal with:
+1. Open [NVIDIA Build](https://build.nvidia.com/), choose the `qwen/qwen2.5-coder-32b-instruct` model, and generate an API key. Confirm that this model is currently available to your account.
+2. Copy `backend/.env.example` to `backend/.env.local`.
+3. Open `backend/.env.local` and set:
 
-```powershell
-$env:OPENAI_API_KEY = "YOUR_API_KEY"
-$env:OPENAI_MODEL = "gpt-4o-mini"
-$env:OPENAI_BASE_URL = "https://api.openai.com/v1"
-cd backend
-mvn spring-boot:run
+```dotenv
+NVIDIA_API_KEY=PASTE_YOUR_KEY_HERE
+NVIDIA_MODEL=qwen/qwen2.5-coder-32b-instruct
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
 ```
 
-Replace the model and base URL with the values for your provider if using another OpenAI-compatible service. For the standard OpenAI endpoint, the base URL should end at `/v1`; the backend appends `/chat/completions`.
+4. Save the file, stop the existing CodePilot terminal windows with **Ctrl+C**, then start `start-dev.ps1` again. The startup script loads this private file into the backend process. Never commit the real key to GitHub or put it in frontend code.
 
+NVIDIA's endpoint is OpenAI-compatible. Legacy `OPENAI_API_KEY`, `OPENAI_MODEL`, and `OPENAI_BASE_URL` settings remain supported if the NVIDIA variables are unset.
 Test it in a second terminal:
 
 ```powershell
