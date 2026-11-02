@@ -16,7 +16,9 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'assistant', text: 'Hey! I can explain this Java code, help debug errors, or suggest improvements. What would you like to know?' }]);
   const [providers, setProviders] = useState<ProviderStatus>({});
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
-  const [chatBusy, setChatBusy] = useState(false);\n  const [providerTest, setProviderTest] = useState('Provider has not been tested yet.');\n  const [testingProvider, setTestingProvider] = useState(false);
+  const [chatBusy, setChatBusy] = useState(false);
+  const [providerTest, setProviderTest] = useState('Provider has not been tested yet.');
+  const [testingProvider, setTestingProvider] = useState(false);
 
   async function api(path: string, init?: RequestInit) {
     const response = await fetch('/api/' + path, {
@@ -38,7 +40,16 @@ export default function App() {
   }
   useEffect(() => { void refreshStatus(); }, []);
 
-  async function testProvider() {\n    setTestingProvider(true);\n    setProviderTest('Testing ' + (provider === 'local' ? 'Ollama' : 'remote API') + '…');\n    try {\n      const data = await api('ai/test?provider=' + provider);\n      setProviderTest('Connected: ' + (data.response || 'test prompt succeeded'));\n    } catch (e) { setProviderTest('Test failed: ' + (e as Error).message); }\n    finally { setTestingProvider(false); void refreshStatus(); }\n  }\n  async function runCode() {
+  async function testProvider() {
+    setTestingProvider(true);
+    setProviderTest('Testing ' + (provider === 'local' ? 'Ollama' : 'remote API') + '…');
+    try {
+      const data = await api('ai/test?provider=' + provider);
+      setProviderTest('Connected: ' + (data.response || 'test prompt succeeded'));
+    } catch (e) { setProviderTest('Test failed: ' + (e as Error).message); }
+    finally { setTestingProvider(false); void refreshStatus(); }
+  }
+  async function runCode() {
     setBusy(true);
     try {
       const data: RunResult = await api('run', { method: 'POST', body: JSON.stringify({ code, fileName }) });
