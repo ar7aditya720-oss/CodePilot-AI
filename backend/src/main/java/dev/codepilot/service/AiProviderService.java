@@ -25,9 +25,9 @@ public class AiProviderService {
     local.put("url", env("OLLAMA_URL", "http://localhost:11434"));
     local.put("model", env("OLLAMA_MODEL", "qwen2.5-coder:7b"));
     Map<String, Object> remote = new LinkedHashMap<>();
-    remote.put("configured", !env("OPENAI_API_KEY", "").isBlank());
-    remote.put("model", env("OPENAI_MODEL", "gpt-4o-mini"));
-    remote.put("baseUrl", env("OPENAI_BASE_URL", "https://api.openai.com/v1"));
+    remote.put("configured", !remoteApiKey().isBlank());
+    remote.put("model", remoteModel());
+    remote.put("baseUrl", remoteBaseUrl());
     return Map.of("local", local, "remote", remote);
   }
 
@@ -70,10 +70,10 @@ public class AiProviderService {
   }
 
   private String askRemote(String prompt) {
-    String key = env("OPENAI_API_KEY", "");
-    if (key.isBlank()) throw new IllegalStateException("Remote AI is not configured. Set OPENAI_API_KEY in the environment used to start the backend, then restart Spring Boot.");
-    String baseUrl = trimSlash(env("OPENAI_BASE_URL", "https://api.openai.com/v1"));
-    String model = env("OPENAI_MODEL", "gpt-4o-mini");
+    String key = remoteApiKey();
+    if (key.isBlank()) throw new IllegalStateException("Remote AI is not configured. Set NVIDIA_API_KEY in backend/.env.local, then restart CodePilot AI.");
+    String baseUrl = trimSlash(remoteBaseUrl());
+    String model = remoteModel();
     try {
       String body = mapper.createObjectNode()
           .put("model", model)
@@ -93,12 +93,12 @@ public class AiProviderService {
       }
       JsonNode json = mapper.readTree(response.body());
       String answer = json.path("choices").path(0).path("message").path("content").asText("");
-      if (answer.isBlank()) throw new IllegalStateException("Remote AI returned no message content. Verify OPENAI_MODEL and OPENAI_BASE_URL.");
+      if (answer.isBlank()) throw new IllegalStateException("Remote AI returned no message content. Verify NVIDIA_MODEL and NVIDIA_BASE_URL.");
       return answer;
     } catch (IllegalStateException e) {
       throw e;
     } catch (Exception e) {
-      throw new IllegalStateException("Remote AI request failed for " + baseUrl + ". Check network access, OPENAI_BASE_URL, model availability, and API credentials. Details: " + e.getMessage());
+      throw new IllegalStateException("Remote AI request failed for " + baseUrl + ". Check network access, NVIDIA_BASE_URL, model availability, and API credentials. Details: " + e.getMessage());
     }
   }
 
@@ -110,6 +110,25 @@ public class AiProviderService {
     } catch (Exception ignored) {
       return shorten(body);
     }
+  }
+
+  private static String remoteApiKey() {
+    return firstConfigured("NVIDIA_API_KEY", "OPENAI_API_KEY", "");
+  }
+
+  private static String remoteModel() {
+    return firstConfigured("NVIDIA_MODEL", "OPENAI_MODEL", "qwen/qwen2.5-coder-32b-instruct");
+  }
+
+  private static String remoteBaseUrl() {
+    return firstConfigured("NVIDIA_BASE_URL", "OPENAI_BASE_URL", "https://integrate.api.nvidia.com/v1");
+  }
+
+  private static String firstConfigured(String primary, String legacy, String fallback) {
+    String value = System.getenv(primary);
+    if (value != null && !value.isBlank()) return value.trim();
+    value = System.getenv(legacy);
+    return value == null || value.isBlank() ? fallback : value.trim();
   }
 
   private static String env(String key, String fallback) {
